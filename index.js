@@ -67,20 +67,51 @@ app.post('/api/clients', async (req, res) => {
     }
   });
 });
+app.get(`/api/client/:id`, async (req, res) => {
+  console.log('search clients for client');
+  console.log(req.params.id);
+  const createSessionQuery = `SELECT * FROM clients 
+  WHERE id = ${req.params.id}`;
+
+  pool.query(createSessionQuery, (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log('client retrieved');
+      return res.json({ success: true, code: 200, data: result });
+    }
+  });
+});
 
 //// session routes
 app.get('/api/sessions', async (req, res) => {
   try {
-    console.log('getting to server');
+    console.log('getting from server');
     const { rows } = await pool.query('SELECT * FROM sessions');
-    console.log('inside server');
-    console.log(rows);
+    // console.log('inside server');
+    // console.log(rows);
     return res.json({ success: true, code: 200, data: rows });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// get sessions by day
+app.get('/api/sessions/day/:date', async (req, res) => {
+  const createSessionQuery = `SELECT * FROM sessions 
+ WHERE DATE(date_time) = DATE('${req.params.date}')`;
+
+  pool.query(createSessionQuery, (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log('day schedule retrieved');
+      return res.json({ success: true, code: 200, data: result });
+    }
+  });
+});
+
 app.post('/api/sessions', async (req, res) => {
   console.log(req.body);
   const { sessionData } = req.body;
@@ -95,6 +126,50 @@ app.post('/api/sessions', async (req, res) => {
       console.log(err);
     } else {
       console.log('session created successfully');
+      return res.json({ success: true, code: 200, data: result });
+    }
+  });
+});
+app.delete('/api/sessions', async (req, res) => {
+  console.log('delete');
+  console.log(req.body);
+  createSessionQuery = `DELETE FROM sessions WHERE id = ${req.body.id}`;
+  pool.query(createSessionQuery, (err, result) => {
+    if (err) {
+      console.log('error');
+      console.log(err);
+    } else {
+      console.log('session row removed');
+      return res.json({ success: true, code: 200, data: result });
+    }
+  });
+});
+
+app.put('/api/sessions', async (req, res) => {
+  console.log('update');
+  console.log(req.body);
+  const {
+    id,
+    client_id,
+    location,
+    date_time,
+    confirmed,
+    canceled,
+    reminder_sent,
+  } = req.body.data;
+  createSessionQuery = `UPDATE sessions 
+  SET location = '${location}',
+  date_time = '${date_time}',
+  confirmed = ${confirmed},
+  canceled = ${canceled},
+  reminder_sent = ${reminder_sent}
+  WHERE id=${id}`;
+  pool.query(createSessionQuery, (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log('session updated');
+      console.log({ result });
       return res.json({ success: true, code: 200, data: result });
     }
   });
