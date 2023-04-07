@@ -38,8 +38,6 @@ app.get('/api/clients', async (req, res) => {
   try {
     console.log('getting to server');
     const { rows } = await pool.query('SELECT * FROM clients');
-    console.log('inside server');
-    console.log(rows);
     return res.json({ success: true, code: 200, data: rows });
   } catch (err) {
     console.error(err);
@@ -88,8 +86,7 @@ app.get('/api/sessions', async (req, res) => {
   try {
     console.log('getting from server');
     const { rows } = await pool.query('SELECT * FROM sessions');
-    // console.log('inside server');
-    // console.log(rows);
+
     return res.json({ success: true, code: 200, data: rows });
   } catch (err) {
     console.error(err);
@@ -113,23 +110,60 @@ app.get('/api/sessions/day/:date', async (req, res) => {
 });
 
 app.post('/api/sessions', async (req, res) => {
-  console.log(req.body);
   const { sessionData } = req.body;
-  const createSessionQuery = `INSERT INTO sessions(client_id, location, 
-    date_time, confirmed, canceled, reminder_sent )
-  values ('${sessionData.client_id}', '${sessionData.location}', 
-  '${sessionData.date_time}', '${sessionData.confirmed}', 
-  '${sessionData.canceled}', '${sessionData.reminder_sent}')`;
-  pool.query(createSessionQuery, (err, result) => {
-    if (err) {
-      console.log('error');
-      console.log(err);
-    } else {
-      console.log('session created successfully');
-      return res.json({ success: true, code: 200, data: result });
-    }
-  });
+  try {
+    const timeWindowBefore = new Date(
+      new Date(Date.parse(sessionData.date_time) - 75 * 60000).toUTCString()
+    );
+    const timeWindowAfter = new Date(
+      new Date(Date.parse(sessionData.date_time) + 75 * 60000).toUTCString()
+    );
+
+    const timeValidationQuery = `SELECT date_time FROM sessions 
+    WHERE date_time = '${sessionData.date_time}' 
+      OR date_time BETWEEN 
+      '${timeWindowBefore.toISOString()}' AND 
+      '${timeWindowAfter.toISOString()}'`;
+
+    const existingRecord = await pool.query(
+      timeValidationQuery,
+      //// checks if there is already a scheduled appt with in 75 minutes
+      //     before and after date_time value of this session
+      (err, result) => {
+        if (result && result.rows && result.rows.length > 0) {
+          console.log('rejected because of time overlap');
+          return res.json({
+            success: false,
+            code: 400,
+            data: result,
+          });
+          // res.status(400).send('Duplicate date_time value'); // Return an error message to the client
+        } else {
+          // If there are no rows returned, that means the value are unique
+
+          const createSessionQuery = `INSERT INTO sessions(client_id, location, 
+          date_time, confirmed, canceled, reminder_sent )
+        values ('${sessionData.client_id}', '${sessionData.location}', 
+        '${sessionData.date_time}', '${sessionData.confirmed}', 
+        '${sessionData.canceled}', '${sessionData.reminder_sent}')`;
+          pool.query(createSessionQuery, (err, result) => {
+            if (err) {
+              console.log('error');
+              console.log(err);
+            } else {
+              console.log('session created successfully');
+              return res.json({ success: true, code: 200, data: result });
+            }
+          });
+        }
+      }
+    );
+  } catch {
+    console.log('caught');
+    console.error;
+  }
 });
+
 app.delete('/api/sessions', async (req, res) => {
   console.log('delete');
   console.log(req.body);
