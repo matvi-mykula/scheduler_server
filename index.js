@@ -45,6 +45,13 @@ pool.connect((err) => {
 //   data: any;
 // }
 app.get('/api/clients', async (req, res) => {
+  if (req.body) {
+    return res.json({
+      success: false,
+      code: 400,
+      data: 'should not have any variables passed in',
+    });
+  }
   try {
     console.log('getting to server');
     const { rows } = await pool.query('SELECT * FROM clients');
@@ -55,20 +62,39 @@ app.get('/api/clients', async (req, res) => {
   }
 });
 app.post('/api/clients', async (req, res) => {
+  if (clientValidation(req.body) === false) {
+    return res.json({
+      success: false,
+      code: 400,
+      data: 'Needs to pass body as Client object',
+    });
+  }
+  const {
+    first_name,
+    last_name,
+    payment_method,
+    text_ok,
+    email_ok,
+    num_sessions,
+    num_cancels,
+    cell,
+    email,
+    rate,
+  } = req.body;
+
   console.log(req.body);
-  const { clientData } = req.body;
-  console.log(clientData);
+
+  console.log(first_name);
   const createClientQuery = `
   INSERT INTO clients(first_name, last_name, payment_method, text_ok, email_ok, num_sessions,
     num_cancels, cell, email, rate)
-    values ('${clientData.firstName}', '${clientData.lastName}', '${clientData.paymentMethod}' ,'${clientData.textOK}',
-      '${clientData.emailOK}', '${clientData.numSessions}', '${clientData.numCancels}', '${clientData.cell}',
-      '${clientData.email}', '${clientData.rate}')
+    values ('${first_name}', '${last_name}', '${payment_method}' ,'${text_ok}',
+      '${email_ok}', '${num_sessions}', '${num_cancels}', '${cell}',
+      '${email}', '${rate}')
   `;
   pool.query(createClientQuery, (err, result) => {
     if (err) {
-      console.log('error');
-      console.error(err);
+      console.log(err);
     } else {
       console.log('Client created successfully');
       return res.json({ success: true, code: 200, data: result });
@@ -76,6 +102,21 @@ app.post('/api/clients', async (req, res) => {
   });
 });
 app.get(`/api/client/:id`, async (req, res) => {
+  /////////-------- why is postman recognizing a req.body and not a param????
+  // if (req.body) {
+  //   return res.json({
+  //     success: false,
+  //     code: 400,
+  //     data: 'Only takes param',
+  //   });
+  // }
+  if (idValidation(req.params.id) === false) {
+    return res.json({
+      success: false,
+      code: 400,
+      data: 'Needs to pass body as Client object',
+    });
+  }
   console.log('search clients for client');
   console.log(req.params.id);
   const createSessionQuery = `SELECT * FROM clients 
@@ -93,6 +134,13 @@ app.get(`/api/client/:id`, async (req, res) => {
 
 //// session routes
 app.get('/api/sessions', async (req, res) => {
+  if (getSessionValidation(req.body) === false) {
+    return res.json({
+      success: false,
+      code: 400,
+      data: 'Cannot have any request body',
+    });
+  }
   try {
     console.log('getting from server');
     const { rows } = await pool.query('SELECT * FROM sessions');
@@ -100,12 +148,22 @@ app.get('/api/sessions', async (req, res) => {
     return res.json({ success: true, code: 200, data: rows });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // get sessions by day
 app.get('/api/sessions/day/:date', async (req, res) => {
+  if (
+    getSessionByDateValidation(req.params) === false ||
+    getSessionValidation(req.body) === false
+  ) {
+    return res.json({
+      success: false,
+      code: 400,
+      data: 'Not a valid Date parameter',
+    });
+  }
+
   const createSessionQuery = `SELECT * FROM sessions 
  WHERE DATE(date_time) = DATE('${req.params.date}')`;
 
@@ -120,6 +178,7 @@ app.get('/api/sessions/day/:date', async (req, res) => {
 });
 
 app.post('/api/sessions', async (req, res) => {
+  // await validateRequest(req.body)
   const { sessionData } = req.body;
   try {
     const timeWindowBefore = new Date(
@@ -150,6 +209,7 @@ app.post('/api/sessions', async (req, res) => {
           // res.status(400).send('Duplicate date_time value'); // Return an error message to the client
         } else {
           // If there are no rows returned, that means the value are unique
+          const { client_id } = sessionData;
 
           const createSessionQuery = `INSERT INTO sessions(client_id, location, 
           date_time, confirmed, canceled, reminder_sent )
@@ -168,8 +228,8 @@ app.post('/api/sessions', async (req, res) => {
         }
       }
     );
-  } catch {
-    console.log('caught');
+  } catch (e) {
+    console.log(e);
     console.error;
   }
 });
