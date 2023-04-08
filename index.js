@@ -1,8 +1,18 @@
-const express = require('express');
-require('dotenv').config();
-const Twilio = require('twilio');
+import { clientValidation } from './clientValidation.mjs';
+import {
+  getSessionValidation,
+  getSessionByDateValidation,
+} from './sessionValidation.mjs';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
-const { Pool } = require('pg');
+import express from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
+import Twilio from 'twilio';
+
+import pkg from 'pg';
+const { Pool } = pkg;
 var cors = require('cors');
 
 const app = express();
