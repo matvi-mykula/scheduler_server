@@ -1,4 +1,4 @@
-import { clientValidation } from './clientValidation.mjs';
+import { clientValidation, idValidation } from './clientValidation.mjs';
 import {
   getSessionValidation,
   getSessionByDateValidation,
@@ -44,14 +44,8 @@ pool.connect((err) => {
 //   code: number;
 //   data: any;
 // }
+
 app.get('/api/clients', async (req, res) => {
-  if (req.body) {
-    return res.json({
-      success: false,
-      code: 400,
-      data: 'should not have any variables passed in',
-    });
-  }
   try {
     console.log('getting to server');
     const { rows } = await pool.query('SELECT * FROM clients');
@@ -180,6 +174,7 @@ app.get('/api/sessions/day/:date', async (req, res) => {
 app.post('/api/sessions', async (req, res) => {
   // await validateRequest(req.body)
   const { sessionData } = req.body;
+  console.log(sessionData.date_time);
   try {
     const timeWindowBefore = new Date(
       new Date(Date.parse(sessionData.date_time) - 75 * 60000).toUTCString()
@@ -222,7 +217,7 @@ app.post('/api/sessions', async (req, res) => {
               console.log(err);
             } else {
               console.log('session created successfully');
-              return res.json({ success: true, code: 200, data: result });
+              return res.json({ success: true, code: 200, data: result.rows });
             }
           });
         }
@@ -261,7 +256,7 @@ app.put('/api/sessions', async (req, res) => {
     canceled,
     reminder_sent,
   } = req.body.data;
-  createSessionQuery = `UPDATE sessions 
+  const createSessionQuery = `UPDATE sessions 
   SET location = '${location}',
   date_time = '${date_time}',
   confirmed = ${confirmed},
