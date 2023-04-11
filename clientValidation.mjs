@@ -14,7 +14,7 @@ const clientValidation = (client) => {
   );
 };
 const idValidation = (id) => {
-  return typeof id === 'string';
+  return typeof id === 'string' && typeof parseInt(id) === 'number';
 };
 
 // interface Client {

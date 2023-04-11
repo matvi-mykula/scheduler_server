@@ -1,7 +1,8 @@
 import { clientValidation, idValidation } from './clientValidation.mjs';
 import {
-  getSessionValidation,
+  postSessionValidation,
   getSessionByDateValidation,
+  postSessionTimeWindowQuery,
 } from './sessionValidation.mjs';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -96,19 +97,14 @@ app.post('/api/clients', async (req, res) => {
   });
 });
 app.get(`/api/client/:id`, async (req, res) => {
-  /////////-------- why is postman recognizing a req.body and not a param????
-  // if (req.body) {
-  //   return res.json({
-  //     success: false,
-  //     code: 400,
-  //     data: 'Only takes param',
-  //   });
-  // }
+  /////---- currently im validation 'numbers' but string params such as
+  //// --- 'bad' i get a server error: column 'bad' does not exist
+  console.log(req.params.id);
   if (idValidation(req.params.id) === false) {
     return res.json({
       success: false,
       code: 400,
-      data: 'Needs to pass body as Client object',
+      data: 'Needs to pass params as Client.id',
     });
   }
   console.log('search clients for client');
@@ -120,21 +116,22 @@ app.get(`/api/client/:id`, async (req, res) => {
     if (err) {
       console.log(err);
     } else {
-      console.log('client retrieved');
-      return res.json({ success: true, code: 200, data: result });
+      return result.rows.length
+        ? res.json({ success: true, code: 200, data: result.rows })
+        : res.json({ sucess: false, code: 400, data: 'ID not found' });
     }
   });
 });
 
 //// session routes
 app.get('/api/sessions', async (req, res) => {
-  if (getSessionValidation(req.body) === false) {
-    return res.json({
-      success: false,
-      code: 400,
-      data: 'Cannot have any request body',
-    });
-  }
+  // if (getSessionValidation(req.body) === false) {
+  //   return res.json({
+  //     success: false,
+  //     code: 400,
+  //     data: 'Cannot have any request body',
+  //   });
+  // }
   try {
     console.log('getting from server');
     const { rows } = await pool.query('SELECT * FROM sessions');
@@ -147,9 +144,10 @@ app.get('/api/sessions', async (req, res) => {
 
 // get sessions by day
 app.get('/api/sessions/day/:date', async (req, res) => {
+  console.log(req.params);
   if (
-    getSessionByDateValidation(req.params) === false ||
-    getSessionValidation(req.body) === false
+    getSessionByDateValidation(req.params) === false
+    // gSessionValidation(req.body) === false
   ) {
     return res.json({
       success: false,
@@ -157,40 +155,44 @@ app.get('/api/sessions/day/:date', async (req, res) => {
       data: 'Not a valid Date parameter',
     });
   }
-
+  console.log(req.params.date.date);
   const createSessionQuery = `SELECT * FROM sessions 
  WHERE DATE(date_time) = DATE('${req.params.date}')`;
-
+  //// maybe it has to do with the format of params.date
   pool.query(createSessionQuery, (err, result) => {
     if (err) {
       console.log(err);
     } else {
       console.log('day schedule retrieved');
-      return res.json({ success: true, code: 200, data: result });
+      result.rows.length
+        ? res.json({ success: true, code: 200, data: result.rows })
+        : res.json({
+            success: false,
+            code: 400,
+            data: 'no sessions on this day',
+          });
     }
   });
 });
 
 app.post('/api/sessions', async (req, res) => {
   // await validateRequest(req.body)
-  const { sessionData } = req.body;
-  console.log(sessionData.date_time);
+  if (!postSessionValidation(req.body)) {
+    return res.json({ success: false, code: 400, data: 'not valid session' });
+  }
+  const {
+    id,
+    client_id,
+    location,
+    date_time,
+    confirmed,
+    canceled,
+    reminder_sent,
+  } = req.body;
+  console.log({ id });
   try {
-    const timeWindowBefore = new Date(
-      new Date(Date.parse(sessionData.date_time) - 75 * 60000).toUTCString()
-    );
-    const timeWindowAfter = new Date(
-      new Date(Date.parse(sessionData.date_time) + 75 * 60000).toUTCString()
-    );
-
-    const timeValidationQuery = `SELECT date_time FROM sessions 
-    WHERE date_time = '${sessionData.date_time}' 
-      OR date_time BETWEEN 
-      '${timeWindowBefore.toISOString()}' AND 
-      '${timeWindowAfter.toISOString()}'`;
-
     const existingRecord = await pool.query(
-      timeValidationQuery,
+      postSessionTimeWindowQuery(date_time),
       //// checks if there is already a scheduled appt with in 75 minutes
       //     before and after date_time value of this session
       (err, result) => {
@@ -199,7 +201,7 @@ app.post('/api/sessions', async (req, res) => {
           return res.json({
             success: false,
             code: 400,
-            data: result,
+            data: `rejected because of overlap with another session`,
           });
           // res.status(400).send('Duplicate date_time value'); // Return an error message to the client
         } else {
@@ -208,9 +210,9 @@ app.post('/api/sessions', async (req, res) => {
 
           const createSessionQuery = `INSERT INTO sessions(client_id, location, 
           date_time, confirmed, canceled, reminder_sent )
-        values ('${sessionData.client_id}', '${sessionData.location}', 
-        '${sessionData.date_time}', '${sessionData.confirmed}', 
-        '${sessionData.canceled}', '${sessionData.reminder_sent}')`;
+        values ('${client_id}', '${location}', 
+        '${date_time}', '${confirmed}', 
+        '${canceled}', '${reminder_sent}')`;
           pool.query(createSessionQuery, (err, result) => {
             if (err) {
               console.log('error');
@@ -230,23 +232,54 @@ app.post('/api/sessions', async (req, res) => {
 });
 
 app.delete('/api/sessions', async (req, res) => {
-  console.log('delete');
-  console.log(req.body);
-  createSessionQuery = `DELETE FROM sessions WHERE id = ${req.body.id}`;
-  pool.query(createSessionQuery, (err, result) => {
+  if (isNaN(Number(req.body.id))) {
+    /// how to check if req.body.id is an integer???
+    return res.json({
+      success: false,
+      code: 400,
+      data: 'session id not valid',
+    });
+  }
+
+  const checkDeleteQuery = `SELECT FROM sessions WHERE id = ${req.body.id}`;
+  pool.query(checkDeleteQuery, (err, result) => {
     if (err) {
-      console.log('error');
-      console.log(err);
-    } else {
-      console.log('session row removed');
-      return res.json({ success: true, code: 200, data: result });
+      //   return res.json({
+      //     success: false,
+      //     code: 400,
+      //     data: 'session not found for deletion',
+      //   });
+    }
+    if (result) {
+      if (result.rows.length === 0) {
+        return res.json({
+          success: false,
+          code: 400,
+          data: 'session not found for deletion',
+        });
+      } else {
+        console.log('delete');
+        console.log(req.body);
+        const createSessionQuery = `DELETE FROM sessions WHERE id = ${req.body.id}`;
+        pool.query(createSessionQuery, (err, result) => {
+          if (err) {
+            console.log('error');
+            console.log(err);
+          } else {
+            console.log('session row removed');
+            return res.json({ success: true, code: 200, data: result });
+          }
+        });
+      }
     }
   });
 });
 
 app.put('/api/sessions', async (req, res) => {
-  console.log('update');
-  console.log(req.body);
+  if (!postSessionValidation(req.body)) {
+    return res.json({ success: false, code: 400, data: 'not valid session' });
+  }
+
   const {
     id,
     client_id,
@@ -255,7 +288,7 @@ app.put('/api/sessions', async (req, res) => {
     confirmed,
     canceled,
     reminder_sent,
-  } = req.body.data;
+  } = req.body;
   const createSessionQuery = `UPDATE sessions 
   SET location = '${location}',
   date_time = '${date_time}',
@@ -268,7 +301,7 @@ app.put('/api/sessions', async (req, res) => {
       console.log(err);
     } else {
       console.log('session updated');
-      console.log({ result });
+      console.log(result);
       return res.json({ success: true, code: 200, data: result });
     }
   });
@@ -316,74 +349,14 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 //     rate INTEGER NOT NULL
 //   )
 // `;
-const createTableQuery = `
-  CREATE TABLE sessions (
-    id SERIAL PRIMARY KEY,
-    client_id VARCHAR(50) NOT NULL,
-    location VARCHAR(50) NOT NULL,
-    date_time VARCHAR(50) NOT NULL,
-    confirmed BOOLEAN NOT NULL,
-    canceled BOOLEAN NOT NULL,
-    reminder_sent BOOLEAN NOT NULL
-  )
-`;
-
-// console.log('hey2');
-
-// pool.query(createTableQuery, (err, res) => {
-//   if (err) {
-//     console.log('error');
-//     console.error(err);
-//   } else {
-//     console.log('Table created successfully');
-//   }
-// });
-// console.log('hey3');
-
-// import axios from 'axios';
-// import { Identifier } from 'typescript';
-// ///send blog data to database
-// function figureAPI() {
-//   console.log(window.location);
-//   console.log(process.env.NODE_ENV);
-//   const devBackend = 'http://localhost:3001/';
-//   const prodBackend = 'https://dry-silence-9236.fly.dev/';
-
-//   console.log({ prodBackend });
-//   const prodEnv = process.env.NODE_ENV === 'production';
-//   console.log(prodEnv);
-//   let environment;
-//   prodEnv ? (environment = prodBackend) : (environment = devBackend);
-//   return environment;
-// }
-
-// const environment = figureAPI();
-
-// interface User {
-//   id: Identifier;
-//   firstName: string;
-//   lastName: string;
-//   paymentMethod: 'credit' | 'cash' | 'venmo' | 'other';
-//   textOK: boolean;
-//   numSessions: number;
-//   numCancel: number;
-// }
-
-// const getUsers = () => {
-//     console.log('getting user data')
-// }
-
-// const postUser = (userData: User) => {
-//   console.log('posting blog post');
-//   axios
-//     .post(environment + 'postUser', {
-//       userData,
-//     })
-//     .then((response) => {
-//       console.log('this blog post should be posted');
-
-//       console.log(response.data);
-//     });
-// };
-
-// export { postUser };
+// const createTableQuery = `
+//   CREATE TABLE sessions (
+//     id SERIAL PRIMARY KEY,
+//     client_id VARCHAR(50) NOT NULL,
+//     location VARCHAR(50) NOT NULL,
+//     date_time VARCHAR(50) NOT NULL,
+//     confirmed BOOLEAN NOT NULL,
+//     canceled BOOLEAN NOT NULL,
+//     reminder_sent BOOLEAN NOT NULL
+//   )
+// `;
