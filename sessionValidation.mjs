@@ -14,9 +14,9 @@ const postSessionValidation = (session) => {
   // Check that the types of the properties are correct
   if (
     typeof session.client_id !== 'string' ||
-    typeof session.reminder_sent !== 'boolean' ||
-    typeof session.confirmed !== 'boolean' ||
-    typeof session.canceled !== 'boolean' ||
+    typeof JSON.parse(session.reminder_sent) !== 'boolean' ||
+    typeof JSON.parse(session.confirmed) !== 'boolean' ||
+    typeof JSON.parse(session.canceled) !== 'boolean' ||
     typeof session.location !== 'string' ||
     !moment(session.date_time, moment.ISO_8601, true).isValid()
   ) {
