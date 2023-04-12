@@ -56,6 +56,7 @@ app.get('/api/clients', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 app.post('/api/clients', async (req, res) => {
   if (clientValidation(req.body) === false) {
     return res.json({
@@ -176,20 +177,12 @@ app.get('/api/sessions/day/:date', async (req, res) => {
 });
 
 app.post('/api/sessions', async (req, res) => {
-  // await validateRequest(req.body)
-  if (!postSessionValidation(req.body)) {
+  const newSession = req.body.sessionData;
+  if (!postSessionValidation(newSession)) {
     return res.json({ success: false, code: 400, data: 'not valid session' });
   }
-  const {
-    id,
-    client_id,
-    location,
-    date_time,
-    confirmed,
-    canceled,
-    reminder_sent,
-  } = req.body;
-  console.log({ id });
+  const { client_id, location, date_time, confirmed, canceled, reminder_sent } =
+    newSession;
   try {
     const existingRecord = await pool.query(
       postSessionTimeWindowQuery(date_time),
@@ -206,7 +199,7 @@ app.post('/api/sessions', async (req, res) => {
           // res.status(400).send('Duplicate date_time value'); // Return an error message to the client
         } else {
           // If there are no rows returned, that means the value are unique
-          const { client_id } = sessionData;
+          // const { client_id } = sessionData;
 
           const createSessionQuery = `INSERT INTO sessions(client_id, location, 
           date_time, confirmed, canceled, reminder_sent )

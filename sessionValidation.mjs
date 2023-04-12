@@ -1,6 +1,6 @@
 import moment from 'moment';
 const postSessionValidation = (session) => {
-  console.log(typeof session.date_time);
+  console.log(session);
   if (Object.keys(session).length === 0) {
     console.log('no keys');
     return false;
