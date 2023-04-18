@@ -1,5 +1,6 @@
 import moment from 'moment';
 const postSessionValidation = (session) => {
+  console.log(session);
   if (Object.keys(session).length === 0) {
     console.log('no keys');
     return false;
@@ -26,6 +27,7 @@ const postSessionValidation = (session) => {
   return true;
 };
 const postSessionTimeWindowQuery = (time) => {
+  console.log('getting to time window query');
   const timeWindowBefore = new Date(
     new Date(Date.parse(time) - 75 * 60000).toUTCString()
   );
@@ -38,6 +40,9 @@ const postSessionTimeWindowQuery = (time) => {
     OR date_time BETWEEN 
     '${timeWindowBefore.toISOString()}' AND 
     '${timeWindowAfter.toISOString()}'`;
+
+  console.log({ timeValidationQuery });
+
   return timeValidationQuery;
 };
 const getSessionByDateValidation = (parameters) => {
