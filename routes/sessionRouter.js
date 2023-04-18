@@ -27,19 +27,15 @@ sessionRouter.get('/week', async (req, res) => {
   try {
     const startOfWeek = new Date();
     const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
-    console.log(startOfWeek);
     const createSessionQuery = `SELECT * FROM sessions 
     WHERE date_time >= '${startOfWeek.toISOString()}'::timestamp
     AND date_time < '${endOfWeek.toISOString()}'::timestamp`;
-    console.log(createSessionQuery);
     pool.query(createSessionQuery, (err, result) => {
       if (err) {
         console.log(err);
       } else {
         const weeklySessions = sortWeeklySessions(result.rows);
 
-        // console.log('day schedule retrieved');
-        console.log({ result });
         result.rows.length
           ? res.json({ success: true, code: 200, data: weeklySessions })
           : res.json({
@@ -57,8 +53,7 @@ sessionRouter.get('/week', async (req, res) => {
 sessionRouter.post('/', async (req, res) => {
   console.log('posting');
   console.log(req.body);
-  const newSession = req.body;
-  console.log(newSession);
+  const newSession = req.body.sessionData;
   if (!postSessionValidation(newSession)) {
     return res.json({ success: false, code: 400, data: 'not valid session' });
   }
@@ -151,8 +146,9 @@ sessionRouter.delete('/', async (req, res) => {
 
 sessionRouter.put('/', async (req, res) => {
   console.log('putting');
-  console.log(req.body.data);
-  if (!postSessionValidation(req.body.data)) {
+  console.log(req.body.sessionData);
+  const updatedSession = req.body.sessionData;
+  if (!postSessionValidation(updatedSession)) {
     return res.json({ success: false, code: 400, data: 'not valid session' });
   }
 
@@ -164,7 +160,7 @@ sessionRouter.put('/', async (req, res) => {
     confirmed,
     canceled,
     reminder_sent,
-  } = req.body.data;
+  } = updatedSession;
   const createSessionQuery = `UPDATE sessions 
     SET location = '${location}',
     date_time = '${date_time}',
@@ -177,7 +173,6 @@ sessionRouter.put('/', async (req, res) => {
       console.log(err);
     } else {
       console.log('session updated');
-      console.log(result);
       return res.json({
         success: true,
         code: 200,

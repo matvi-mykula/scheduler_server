@@ -41,8 +41,6 @@ const postSessionTimeWindowQuery = (time) => {
     '${timeWindowBefore.toISOString()}' AND 
     '${timeWindowAfter.toISOString()}'`;
 
-  console.log({ timeValidationQuery });
-
   return timeValidationQuery;
 };
 const getSessionByDateValidation = (parameters) => {
