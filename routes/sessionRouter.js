@@ -6,6 +6,7 @@ import {
   postSessionValidation,
 } from '../sessionValidation.js';
 import { sortWeeklySessions } from '../service/sessionRouteService.js';
+import { twilioRouter, twilioClient } from './twilioRouter.js';
 
 //// session routes
 
@@ -169,15 +170,47 @@ sessionRouter.put('/', async (req, res) => {
     canceled = ${canceled},
     reminder_sent = ${reminder_sent}
     WHERE id=${id}`;
-  pool.query(createSessionQuery, (err, result) => {
+  pool.query(createSessionQuery, async (err, result) => {
     if (err) {
       console.log(err);
     } else {
       console.log('session updated');
-      return res.json({
-        success: true,
-        code: 200,
-        data: `session ${id} updated`,
+
+      // always send text notifying that an update happened
+      //get client info
+      const createSessionQuery = `SELECT * FROM clients 
+WHERE id = ${client_id}`;
+
+      pool.query(createSessionQuery, async (err, result) => {
+        if (err) {
+          console.log(err);
+        } else {
+          const client = result.rows[0];
+          // verify its ok to text client again here
+          const options = {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+          };
+          const dateString = new Date(date_time).toLocaleString(
+            'en-US',
+            options
+          );
+          //////----- commented out to save money
+          // const message = await twilioClient.messages.create({
+          //   body: `Hello ${client.first_name}. This text is notifying you that your session has been rescheduled to ${dateString}`,
+          //   to: client.cell,
+          //   from: +18884922935,
+          // });
+
+          return res.json({
+            success: true,
+            code: 200,
+            data: `session ${id} updated`,
+          });
+        }
       });
     }
   });

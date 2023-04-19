@@ -58,32 +58,9 @@ pool.connect((err) => {
 //   data: any;
 // }
 
-app.use('/api/test', testRouter);
-
 app.use('/api/clients', clientRouter);
 app.use('/api/sessions', sessionRouter);
-
-//// ----- twilio
-// const accountSid = process.env.ACCOUNTSID;
-// const authToken = process.env.AUTHTOKEN;
-// const client = new Twilio(accountSid, authToken);
-
-// app.post('/sendMessage', (req, res) => {
-//   console.log('server to send message');
-//   console.log(req.body);
-//   client.messages
-//     .create({
-//       body: req.body.msg,
-//       from: '+18884922935',
-//       to: req.body.number,
-//     })
-//     .then((message) => {
-//       console.log('Message sent:', message.sid);
-//     })
-//     .catch((error) => {
-//       console.log('Error sending message:', error);
-//     });
-// });
+app.use('/api/sendMessage', twilioRouter);
 
 // Start server
 const PORT = process.env.PORT || 3001;
