@@ -1,36 +1,26 @@
-import { clientValidation, idValidation } from './clientValidation.mjs';
-import {
-  postSessionValidation,
-  getSessionByDateValidation,
-  postSessionTimeWindowQuery,
-} from './sessionValidation.js';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-
 import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
-import Twilio from 'twilio';
 import moment from 'moment';
-import testRouter from './routes/testRouter.js';
 import { clientRouter } from './routes/clientRouter.js';
 import { sessionRouter } from './routes/sessionRouter.js';
+import { twilioRouter } from './routes/twilioRouter.js';
 import pkg from 'pg';
 const { Pool } = pkg;
-var cors = require('cors');
+import cors from 'cors';
 
 const app = express();
 app.use(cors());
-const bodyParser = require('body-parser');
+import bodyParser from 'body-parser';
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 ////-------- socket.io stuff ----------------------------------------
-const http = require('http');
-const server = http.createServer(app);
-const { Server } = require('socket.io');
-const socketio = require('socket.io');
-const io = socketio(server, { cors: {} });
+import { createServer } from 'http';
+const server = createServer(app);
+import { Server } from 'socket.io';
+import * as socketio from 'socket.io'; /// needed?
+const io = new Server(server, { cors: {} });
 
 /// should i emit same thing on post to all clients
 //// when one client posts a new data row should that send calendar:updated to everyone??
