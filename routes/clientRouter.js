@@ -79,7 +79,7 @@ clientRouter.get(`/:id`, async (req, res) => {
       console.log(err);
     } else {
       return result.rows.length
-        ? res.json({ success: true, code: 200, data: result.rows })
+        ? res.json({ success: true, code: 200, data: result.rows[0] })
         : res.json({ sucess: false, code: 400, data: 'ID not found' });
     }
   });

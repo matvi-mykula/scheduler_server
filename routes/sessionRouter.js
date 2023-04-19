@@ -24,6 +24,7 @@ sessionRouter.get('/', async (req, res) => {
 
 // get sessions by day
 sessionRouter.get('/week', async (req, res) => {
+  console.log('getting to /week');
   try {
     const startOfWeek = new Date();
     const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -35,7 +36,7 @@ sessionRouter.get('/week', async (req, res) => {
         console.log(err);
       } else {
         const weeklySessions = sortWeeklySessions(result.rows);
-
+        console.log(weeklySessions);
         result.rows.length
           ? res.json({ success: true, code: 200, data: weeklySessions })
           : res.json({

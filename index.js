@@ -29,17 +29,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require('socket.io');
-// const io = new Server(server);
 const socketio = require('socket.io');
 const io = socketio(server, { cors: {} });
 
-/// maybe why this is logging so many times is that i am making requests every time DailySchedule
-// component runs??? Should i make all the info calls in the Calendar component? and then
-// just pass along dailySessionData info to the daily components?
+/// should i emit same thing on post to all clients
+//// when one client posts a new data row should that send calendar:updated to everyone??
 io.on('connection', (socket) => {
-  // console.log(`socket connected: ${socket.id}`);
-  // console.log(socket.handshake.headers);
-  // Listen for calendar update events
   socket.on('calendar:updated', () => {
     console.log('socket emit');
     // Emit the event to all connected clients
