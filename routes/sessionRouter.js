@@ -102,117 +102,125 @@ sessionRouter.post('/', async (req, res) => {
 });
 
 sessionRouter.delete('/', async (req, res) => {
-  if (isNaN(Number(req.body.id))) {
-    /// how to check if req.body.id is an integer???
-    return res.json({
-      success: false,
-      code: 400,
-      data: 'session id not valid',
-    });
-  }
+  try {
+    if (isNaN(Number(req.body.id))) {
+      /// how to check if req.body.id is an integer???
+      return res.json({
+        success: false,
+        code: 400,
+        data: 'session id not valid',
+      });
+    }
 
-  const checkDeleteQuery = `SELECT FROM sessions WHERE id = ${req.body.id}`;
-  pool.query(checkDeleteQuery, (err, result) => {
-    if (err) {
-      //   return res.json({
-      //     success: false,
-      //     code: 400,
-      //     data: 'session not found for deletion',
-      //   });
-    }
-    if (result) {
-      if (result.rows.length === 0) {
-        return res.json({
-          success: false,
-          code: 400,
-          data: 'session not found for deletion',
-        });
-      } else {
-        console.log('delete');
-        console.log(req.body);
-        const createSessionQuery = `DELETE FROM sessions WHERE id = ${req.body.id}`;
-        pool.query(createSessionQuery, (err, result) => {
-          if (err) {
-            console.log('error');
-            console.log(err);
-          } else {
-            console.log('session row removed');
-            return res.json({ success: true, code: 200, data: result });
-          }
-        });
+    const checkDeleteQuery = `SELECT FROM sessions WHERE id = ${req.body.id}`;
+    pool.query(checkDeleteQuery, (err, result) => {
+      if (err) {
+        //   return res.json({
+        //     success: false,
+        //     code: 400,
+        //     data: 'session not found for deletion',
+        //   });
       }
-    }
-  });
+      if (result) {
+        if (result.rows.length === 0) {
+          return res.json({
+            success: false,
+            code: 400,
+            data: 'session not found for deletion',
+          });
+        } else {
+          console.log('delete');
+          console.log(req.body);
+          const createSessionQuery = `DELETE FROM sessions WHERE id = ${req.body.id}`;
+          pool.query(createSessionQuery, (err, result) => {
+            if (err) {
+              console.log('error');
+              console.log(err);
+            } else {
+              console.log('session row removed');
+              return res.json({ success: true, code: 200, data: result });
+            }
+          });
+        }
+      }
+    });
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 sessionRouter.put('/', async (req, res) => {
   console.log('putting');
-  console.log(req.body.sessionData);
-  const updatedSession = req.body.sessionData;
-  if (!postSessionValidation(updatedSession)) {
-    return res.json({ success: false, code: 400, data: 'not valid session' });
-  }
+  try {
+    console.log(req.body.sessionData);
+    const updatedSession = req.body.sessionData;
+    if (!postSessionValidation(updatedSession)) {
+      return res.json({ success: false, code: 400, data: 'not valid session' });
+    }
 
-  const {
-    id,
-    client_id,
-    location,
-    date_time,
-    confirmed,
-    canceled,
-    reminder_sent,
-  } = updatedSession;
-  const createSessionQuery = `UPDATE sessions 
+    const {
+      id,
+      client_id,
+      location,
+      date_time,
+      confirmed,
+      canceled,
+      reminder_sent,
+    } = updatedSession;
+    const createSessionQuery = `UPDATE sessions 
     SET location = '${location}',
     date_time = '${date_time}',
     confirmed = ${confirmed},
     canceled = ${canceled},
     reminder_sent = ${reminder_sent}
     WHERE id=${id}`;
-  pool.query(createSessionQuery, async (err, result) => {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log('session updated');
+    pool.query(createSessionQuery, async (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log('session updated');
 
-      // always send text notifying that an update happened
-      //get client info
-      const createSessionQuery = `SELECT * FROM clients 
+        // always send text notifying that an update happened
+        //get client info
+        const createSessionQuery = `SELECT * FROM clients 
 WHERE id = ${client_id}`;
 
-      pool.query(createSessionQuery, async (err, result) => {
-        if (err) {
-          console.log(err);
-        } else {
-          const client = result.rows[0];
-          // verify its ok to text client again here
-          const options = {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-          };
-          const dateString = new Date(date_time).toLocaleString(
-            'en-US',
-            options
-          );
-          //////----- commented out to save money
-          // const message = await twilioClient.messages.create({
-          //   body: `Hello ${client.first_name}. This text is notifying you that your session has been rescheduled to ${dateString}`,
-          //   to: client.cell,
-          //   from: +18884922935,
-          // });
+        pool.query(createSessionQuery, async (err, result) => {
+          if (err) {
+            console.log(err);
+          } else {
+            const client = result.rows[0];
+            // verify its ok to text client again here
+            const options = {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+            };
+            const dateString = new Date(date_time).toLocaleString(
+              'en-US',
+              options
+            );
+            //////----- commented out to save money
+            // const message = await twilioClient.messages.create({
+            //   body: `Hello ${client.first_name}. This text is notifying you that your session has been rescheduled to ${dateString}`,
+            //   to: client.cell,
+            //   from: +18884922935,
+            // });
 
-          return res.json({
-            success: true,
-            code: 200,
-            data: `session ${id} updated`,
-          });
-        }
-      });
-    }
-  });
+            return res.json({
+              success: true,
+              code: 200,
+              data: `session ${id} updated`,
+            });
+          }
+        });
+      }
+    });
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 export { sessionRouter };

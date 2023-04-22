@@ -27,4 +27,17 @@ twilioRouter.post('/', (req, res) => {
     });
 });
 
-export { twilioRouter, twilioClient };
+const sendTwilioText = (msg, number) => {
+  try {
+    twilioClient.messages.create({
+      body: msg,
+      from: '+18884922935',
+      to: number,
+    });
+  } catch (err) {
+    console.log('send twilio problem');
+    console.log(err);
+  }
+};
+
+export { sendTwilioText };
