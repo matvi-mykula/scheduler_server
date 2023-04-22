@@ -5,6 +5,7 @@ import moment from 'moment';
 import { clientRouter } from './routes/clientRouter.js';
 import { sessionRouter } from './routes/sessionRouter.js';
 import { twilioRouter } from './routes/twilioRouter.js';
+import { checkEveryMinute } from './service/scheduledJobs.js';
 import pkg from 'pg';
 const { Pool } = pkg;
 import cors from 'cors';
@@ -26,9 +27,10 @@ const io = new Server(server, { cors: {} });
 //// when one client posts a new data row should that send calendar:updated to everyone??
 io.on('connection', (socket) => {
   socket.on('calendar:updated', () => {
+    console.log(socket.id);
     console.log('socket emit');
     // Emit the event to all connected clients
-    io.emit('calendar:updated');
+    io.emit('calendar:updated', { foo: 1 });
   });
 });
 
@@ -65,6 +67,7 @@ app.use('/api/sendMessage', twilioRouter);
 // Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+checkEveryMinute;
 
 ///// ------- set up tables
 // const createTableQuery = `

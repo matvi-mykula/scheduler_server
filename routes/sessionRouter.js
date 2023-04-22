@@ -37,7 +37,6 @@ sessionRouter.get('/week', async (req, res) => {
         console.log(err);
       } else {
         const weeklySessions = sortWeeklySessions(result.rows);
-        console.log(weeklySessions);
         result.rows.length
           ? res.json({ success: true, code: 200, data: weeklySessions })
           : res.json({
