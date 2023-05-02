@@ -4,8 +4,8 @@ dotenv.config();
 import moment from 'moment';
 import { clientRouter } from './routes/clientRouter.js';
 import { sessionRouter } from './routes/sessionRouter.js';
-import { twilioRouter } from './routes/twilioRouter.js';
-import { checkEveryMinute } from './service/scheduledJobs.js';
+// import { twilioRouter } from './routes/twilioRouter.js';
+import { checkEveryMinute } from './services/scheduledJobs.js';
 import pkg from 'pg';
 const { Pool } = pkg;
 import cors from 'cors';
@@ -30,7 +30,7 @@ io.on('connection', (socket) => {
     console.log(socket.id);
     console.log('socket emit');
     // Emit the event to all connected clients
-    io.emit('calendar:updated', { foo: 1 });
+    io.emit('calendar:updated');
   });
 });
 
@@ -62,7 +62,7 @@ pool.connect((err) => {
 
 app.use('/api/clients', clientRouter);
 app.use('/api/sessions', sessionRouter);
-app.use('/api/sendMessage', twilioRouter);
+// app.use('/api/sendMessage', twilioRouter);
 
 // Start server
 const PORT = process.env.PORT || 3001;
