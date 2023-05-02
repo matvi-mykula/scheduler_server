@@ -1,6 +1,7 @@
 import express from 'express';
 import { clientValidation, idValidation } from '../clientValidation.mjs';
 var clientRouter = express.Router();
+import { searchForClient } from '../services/clientRouteService.js';
 import { pool } from '../index.js';
 
 ///// get all clients
@@ -78,20 +79,10 @@ clientRouter.get(`/:id`, async (req, res) => {
         data: 'Needs to pass params as Client.id',
       });
     }
-    console.log('search clients for client');
-    console.log(req.params.id);
-    const createSessionQuery = `SELECT * FROM clients 
-  WHERE id = ${req.params.id}`;
 
-    pool.query(createSessionQuery, (err, result) => {
-      if (err) {
-        console.log(err);
-      } else {
-        return result.rows.length
-          ? res.json({ success: true, code: 200, data: result.rows[0] })
-          : res.json({ sucess: false, code: 400, data: 'ID not found' });
-      }
-    });
+    const clientData = await searchForClient(req.params.id);
+
+    res.json(clientData);
   } catch (err) {
     console.log(err);
   }

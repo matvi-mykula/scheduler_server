@@ -5,8 +5,11 @@ import {
   postSessionTimeWindowQuery,
   postSessionValidation,
 } from '../sessionValidation.js';
-import { sortWeeklySessions } from '../service/sessionRouteService.js';
-import { twilioRouter, twilioClient } from './twilioRouter.js';
+import { sortWeeklySessions } from '../services/sessionRouteService.js';
+import { sessionCreateMessage } from './twilioRouter.js';
+import { updateSessionQuery } from '../services/sessionRouteService.js';
+import { searchForClient } from '../services/clientRouteService.js';
+import { clientRouter } from './clientRouter.js';
 
 //// session routes
 
@@ -90,6 +93,12 @@ sessionRouter.post('/', async (req, res) => {
               console.log(err);
             } else {
               console.log('session created successfully');
+              ///get client
+              const client = searchForClient(client_id).data.data;
+              console.log({ client });
+              // send twilio msg
+              const msg = sessionCreateMessage(client, newSession);
+
               return res.json({ success: true, code: 200, data: result.rows });
             }
           });
@@ -157,24 +166,8 @@ sessionRouter.put('/', async (req, res) => {
     if (!postSessionValidation(updatedSession)) {
       return res.json({ success: false, code: 400, data: 'not valid session' });
     }
-
-    const {
-      id,
-      client_id,
-      location,
-      date_time,
-      confirmed,
-      canceled,
-      reminder_sent,
-    } = updatedSession;
-    const createSessionQuery = `UPDATE sessions 
-    SET location = '${location}',
-    date_time = '${date_time}',
-    confirmed = ${confirmed},
-    canceled = ${canceled},
-    reminder_sent = ${reminder_sent}
-    WHERE id=${id}`;
-    pool.query(createSessionQuery, async (err, result) => {
+    const updateQuery = updateSessionQuery(updatedSession);
+    pool.query(updateQuery, async (err, result) => {
       if (err) {
         console.log(err);
       } else {
@@ -182,37 +175,24 @@ sessionRouter.put('/', async (req, res) => {
 
         // always send text notifying that an update happened
         //get client info
-        const createSessionQuery = `SELECT * FROM clients 
-WHERE id = ${client_id}`;
+        const clientByIDQuery = `SELECT * FROM clients 
+WHERE id = ${updatedSession.client_id}`;
 
-        pool.query(createSessionQuery, async (err, result) => {
+        pool.query(clientByIDQuery, async (err, result) => {
           if (err) {
             console.log(err);
           } else {
             const client = result.rows[0];
             // verify its ok to text client again here
-            const options = {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: 'numeric',
-            };
-            const dateString = new Date(date_time).toLocaleString(
-              'en-US',
-              options
-            );
+
+            // const msg = updateMessage(client, updatedSession);
+
             //////----- commented out to save money
-            // const message = await twilioClient.messages.create({
-            //   body: `Hello ${client.first_name}. This text is notifying you that your session has been rescheduled to ${dateString}`,
-            //   to: client.cell,
-            //   from: +18884922935,
-            // });
 
             return res.json({
               success: true,
               code: 200,
-              data: `session ${id} updated`,
+              data: `session ${updatedSession.id} updated`,
             });
           }
         });
