@@ -6,9 +6,9 @@ import {
   postSessionValidation,
 } from '../sessionValidation.js';
 import { sortWeeklySessions } from '../services/sessionRouteService.js';
-import { sessionCreateMessage } from './twilioRouter.js';
+import { sessionCreateMessage, sessionRemindMessage } from './twilioRouter.js';
 import { updateSessionQuery } from '../services/sessionRouteService.js';
-import { searchForClient } from '../services/clientRouteService.js';
+import { searchForClientById } from '../services/clientRouteService.js';
 import { clientRouter } from './clientRouter.js';
 
 //// session routes
@@ -87,26 +87,36 @@ sessionRouter.post('/', async (req, res) => {
           '${date_time}', '${confirmed}', 
           '${canceled}', '${reminder_sent}')`;
           console.log(createSessionQuery);
-          pool.query(createSessionQuery, (err, result) => {
+          pool.query(createSessionQuery, async (err, result) => {
             if (err) {
               console.log('error');
               console.log(err);
             } else {
               console.log('session created successfully');
               ///get client
-              const client = searchForClient(client_id).data.data;
+              const res2 = await searchForClientById(client_id);
+              const client = res2.data;
               console.log({ client });
               // send twilio msg
-              const msg = sessionCreateMessage(client, newSession);
+              const msg1 = sessionCreateMessage(client, newSession);
+              /// should schedule the reminder here
 
-              return res.json({ success: true, code: 200, data: result.rows });
+              ///new session doesnt have id yet so update cant take place
+              /// option 1 - get session by rest of data and use that
+              // const msg2 = sessionRemindMessage(client, newSession);
+              console.log('msg should send');
+              return res.json({
+                success: true,
+                code: 200,
+                data: result.rows,
+              });
             }
           });
         }
       }
     );
-  } catch (e) {
-    console.log(e);
+  } catch (err) {
+    console.log(err);
   }
 });
 

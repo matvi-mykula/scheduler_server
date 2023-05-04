@@ -1,4 +1,5 @@
 ////
+import { pool } from '../index.js';
 
 ////sort list of all the weeks session objects into {day:object[], day:object[]....}
 
@@ -35,7 +36,10 @@ const sortWeeklySessions = (events) => {
   return finalDict;
 };
 
+//// when its a new session passed in to be immidiatly updated it doesnt have an id....
+
 const updateSessionQuery = (session) => {
+  console.log({ session });
   const {
     id,
     client_id,
@@ -47,13 +51,24 @@ const updateSessionQuery = (session) => {
   } = session;
   const updateSessionQuery = `UPDATE sessions 
   SET location = '${location}',
-  date_time = '${date_time}',
+  date_time = '${date_time.toISOString()}',
   confirmed = ${confirmed},
   canceled = ${canceled},
   reminder_sent = ${reminder_sent}
   WHERE id=${id}`;
 
+  console.log({ updateSessionQuery });
   return updateSessionQuery;
 };
+const updateSession = async (newSession) => {
+  try {
+    const updateQuery = updateSessionQuery(newSession);
+    const res = await pool.query(updateQuery);
+    return { success: true, code: 200, data: res };
+  } catch (err) {
+    console.log(err);
+    return { success: false, code: 500, data: 'update failed' };
+  }
+};
 
-export { sortWeeklySessions, updateSessionQuery };
+export { sortWeeklySessions, updateSessionQuery, updateSession };

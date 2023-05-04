@@ -1,7 +1,7 @@
 import express from 'express';
 import { clientValidation, idValidation } from '../clientValidation.mjs';
 var clientRouter = express.Router();
-import { searchForClient } from '../services/clientRouteService.js';
+import { searchForClientById } from '../services/clientRouteService.js';
 import { pool } from '../index.js';
 
 ///// get all clients
@@ -19,7 +19,7 @@ clientRouter.get('/', async (req, res) => {
 ///create new client
 clientRouter.post('/', async (req, res) => {
   try {
-    if (clientValidation(req.body) === false) {
+    if (clientValidation(req.body.clientData) === false) {
       return res.json({
         success: false,
         code: 400,
@@ -37,11 +37,8 @@ clientRouter.post('/', async (req, res) => {
       cell,
       email,
       rate,
-    } = req.body;
+    } = req.body.clientData;
 
-    console.log(req.body);
-
-    console.log(first_name);
     const createClientQuery = `
   INSERT INTO clients(first_name, last_name, payment_method, text_ok, email_ok, num_sessions,
     num_cancels, cell, email, rate)
@@ -67,7 +64,6 @@ clientRouter.get(`/:id`, async (req, res) => {
   try {
     /////---- currently im validation 'numbers' but string params such as
     //// --- 'bad' i get a server error: column 'bad' does not exist
-    console.log(req.params.id);
     // const schema = {
     //   id: String.required(),
     // };
@@ -80,9 +76,9 @@ clientRouter.get(`/:id`, async (req, res) => {
       });
     }
 
-    const clientData = await searchForClient(req.params.id);
+    const clientData = await searchForClientById(req.params.id);
 
-    res.json(clientData);
+    // res.json(clientData);
   } catch (err) {
     console.log(err);
   }

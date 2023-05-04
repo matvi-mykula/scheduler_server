@@ -4,8 +4,8 @@ dotenv.config();
 import moment from 'moment';
 import { clientRouter } from './routes/clientRouter.js';
 import { sessionRouter } from './routes/sessionRouter.js';
-// import { twilioRouter } from './routes/twilioRouter.js';
-import { checkEveryMinute } from './services/scheduledJobs.js';
+import { twilioRouter } from './routes/twilioRouter.js';
+import { checkTomorrowSessions } from './services/checkForSessionsAndRemind.js';
 import pkg from 'pg';
 const { Pool } = pkg;
 import cors from 'cors';
@@ -62,12 +62,12 @@ pool.connect((err) => {
 
 app.use('/api/clients', clientRouter);
 app.use('/api/sessions', sessionRouter);
-// app.use('/api/sendMessage', twilioRouter);
+app.use('/api/message', twilioRouter);
 
 // Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-checkEveryMinute;
+checkTomorrowSessions;
 
 ///// ------- set up tables
 // const createTableQuery = `

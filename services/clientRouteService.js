@@ -5,11 +5,11 @@ const searchClientByIdQuery = (id) => {
     WHERE id = ${id}`;
 };
 
-const searchForClient = async (id) => {
+const searchForClientById = async (id) => {
   try {
     const createClientQuery = searchClientByIdQuery(id);
     const res = await pool.query(createClientQuery);
-
+    console.log(res.rows[0]);
     return res.rows.length
       ? { success: true, code: 200, data: res.rows[0] }
       : { sucess: false, code: 400, data: 'ID not found' };
@@ -19,4 +19,4 @@ const searchForClient = async (id) => {
   }
 };
 
-export { searchForClient };
+export { searchForClientById };
