@@ -18,20 +18,6 @@ const idValidation = (id) => {
   return typeof id === 'string' && typeof parseInt(id) === 'number';
 };
 
-// interface Client {
-//   id: string;
-//   first_name: string;
-//   last_name: string;
-//   payment_method: 'credit' | 'cash' | 'venmo' | 'other';
-//   text_ok: boolean;
-//   email_ok: boolean;
-//   num_sessions: number;
-//   num_cancels: number;
-//   // add more
-//   rate: number;
-//   email: string;
-//   cell: string;
-//   [key: string]: string | boolean | number | undefined;
-// }
-
 export { clientValidation, idValidation };
+
+export const validateResquest = (validationSchema, body) => {};

@@ -4,7 +4,7 @@ import { sessionRemindMessage } from '../routes/twilioRouter.js';
 import { searchForClientById } from './clientRouteService.js';
 
 ////get all sessions for tomorrow, send out reminders and update accordingly
-const checkTomorrowSessions = cron.schedule('05 13 * * *', async () => {
+const checkTomorrowSessions = cron.schedule('01 12 * * *', async () => {
   console.log('checking');
 
   const tomorrowsSessionsResponse = await getTomorrowsSessions();
