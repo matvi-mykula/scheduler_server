@@ -10,6 +10,7 @@ import { sessionCreateMessage, sessionRemindMessage } from './twilioRouter.js';
 import { updateSessionQuery } from '../services/sessionRouteService.js';
 import { searchForClientById } from '../services/clientRouteService.js';
 import { clientRouter } from './clientRouter.js';
+import moment from 'moment';
 
 //// session routes
 
@@ -26,15 +27,23 @@ sessionRouter.get('/', async (req, res) => {
   }
 });
 
+/// get sessions by day with sockets
+
 // get sessions by day
 sessionRouter.get('/week', async (req, res) => {
   console.log('getting to /week');
+  const weekStart = parseInt(req.query.weekStart);
+  console.log(typeof weekStart);
+
+  const now = moment();
+  now.add(weekStart, 'weeks');
+
   try {
-    const startOfWeek = new Date();
-    const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const startOfWeek = now.toISOString();
+    const endOfWeek = now.add(7, 'days').toISOString();
     const createSessionQuery = `SELECT * FROM sessions 
-    WHERE date_time >= '${startOfWeek.toISOString()}'::timestamp
-    AND date_time < '${endOfWeek.toISOString()}'::timestamp`;
+    WHERE date_time >= '${startOfWeek}'::timestamp
+    AND date_time < '${endOfWeek}'::timestamp`;
     pool.query(createSessionQuery, (err, result) => {
       if (err) {
         console.log(err);
