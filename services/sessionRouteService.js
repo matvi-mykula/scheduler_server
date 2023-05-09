@@ -39,7 +39,6 @@ const sortWeeklySessions = (events) => {
 //// when its a new session passed in to be immidiatly updated it doesnt have an id....
 
 const updateSessionQuery = (session) => {
-  console.log({ session });
   const {
     id,
     client_id,
