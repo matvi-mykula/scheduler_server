@@ -51,13 +51,12 @@ const updateSessionQuery = (session) => {
   } = session;
   const updateSessionQuery = `UPDATE sessions 
   SET location = '${location}',
-  date_time = '${date_time.toISOString()}',
+  date_time = '${date_time}',
   confirmed = ${confirmed},
   canceled = ${canceled},
   reminder_sent = ${reminder_sent}
   WHERE id=${id}`;
 
-  console.log({ updateSessionQuery });
   return updateSessionQuery;
 };
 const updateSession = async (newSession) => {
