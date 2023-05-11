@@ -35,12 +35,12 @@ sessionRouter.get('/week', async (req, res) => {
   const weekStart = parseInt(req.query.weekStart);
   console.log(typeof weekStart);
 
-  const now = moment();
+  const now = moment().startOf('day');
   now.add(weekStart, 'weeks');
 
   try {
     const startOfWeek = now.toISOString();
-    const endOfWeek = now.add(7, 'days').toISOString();
+    const endOfWeek = now.add(7, 'days').endOf('day').toISOString();
     const createSessionQuery = `SELECT * FROM sessions 
     WHERE date_time >= '${startOfWeek}'::timestamp
     AND date_time < '${endOfWeek}'::timestamp`;
