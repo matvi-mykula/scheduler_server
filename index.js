@@ -21,6 +21,7 @@ import { createServer } from 'http';
 const server = createServer(app);
 import { Server } from 'socket.io';
 import * as socketio from 'socket.io'; /// needed?
+import { getSessionsThatJustHappened } from './services/checkIfSessionHappened.js';
 const io = new Server(server, { cors: {} });
 
 /// should i emit same thing on post to all clients
@@ -68,6 +69,7 @@ app.use('/api/message', twilioRouter);
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Server runnign on port ${PORT}`));
 checkTomorrowSessions;
+getSessionsThatJustHappened;
 
 ///// ------- set up tables
 // const createTableQuery = `
